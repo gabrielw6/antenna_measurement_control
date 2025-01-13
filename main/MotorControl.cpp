@@ -31,6 +31,8 @@ void moveMotor(int motorID, int steps, int dir, float freq,
                int stepPin, int dirPin,
                mcpwm_unit_t unit, mcpwm_timer_t timer)
 {
+  
+
   // Clear stop flag
   stopMotor[motorID] = false;
 
@@ -51,12 +53,22 @@ void moveMotor(int motorID, int steps, int dir, float freq,
   unsigned long total_time_ms = (unsigned long)(total_time_s * 1000.0f);
   unsigned long startTime = millis();
 
+
+
   while ((millis() - startTime) < total_time_ms) {
     if (stopMotor[motorID]) {
       switch(motorID) {
         case AZI: Serial.println("AZI motor STOP mid-move."); break;
         case POL: Serial.println("POL motor STOP mid-move."); break;
         case ELE: Serial.println("ELE motor STOP mid-move."); break;
+      }
+      break;
+    }
+    if((dir == badEndstopDir[motorID]) && (endstopTriggered[motorID])) {
+      switch(motorID) {
+        case AZI: Serial.println("Refuse to move AZI motor past endstop."); break;
+        case POL: Serial.println("Refuse to move POL motor past endstop."); break;
+        case ELE: Serial.println("Refuse to move ELE motor past endstop."); break;
       }
       break;
     }

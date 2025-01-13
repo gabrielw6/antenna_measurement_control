@@ -5,11 +5,15 @@
 // ------ Define global variables here ------
 int   desiredSteps[3]   = {0, 0, 0};
 int   directionVal[3]   = {0, 0, 0};
+int   badEndstopDir[3]  = {0, 0, 0};  // Directions that are not allowed once the endstop is reached
+
 float stepFrequency[3]  = {1000.0, 1000.0, 1000.0};
 
 bool  stopMotor[3]      = {false, false, false};
+volatile bool  stopMotorEndstop[3]      = {false, false, false};   // Stop motor due to interrupt from endstop
 bool  disableAfterMotion = true;
 bool  sweepMode[3]      = {false, false, false};
+volatile bool lastEndstopActive[3] = {false, false, false};
 volatile bool endstopTriggered[3] = {false, false, false};
 
 int stepsPerRev = 200;
@@ -33,20 +37,35 @@ int stepsPerRev = 200;
 // --- Endstop ISRs ---
 void IRAM_ATTR endstopAZI() {
   if (digitalRead(ENDSTOP_PIN_AZI) == LOW) {
-    stopMotor[AZI] = true;
+    stopMotorEndstop[AZI] = true;
     endstopTriggered[AZI] = true;
+  }
+  else {
+    stopMotorEndstop[AZI] = false;
+    endstopTriggered[AZI] = false;
+    lastEndstopActive[AZI] = false;
   }
 }
 void IRAM_ATTR endstopPOL() {
   if (digitalRead(ENDSTOP_PIN_POL) == LOW) {
-    stopMotor[POL] = true;
+    stopMotorEndstop[POL] = true;
     endstopTriggered[POL] = true;
+  }
+  else {
+    stopMotorEndstop[POL] = false;
+    endstopTriggered[POL] = false;
+    lastEndstopActive[POL] = false;
   }
 }
 void IRAM_ATTR endstopELE() {
   if (digitalRead(ENDSTOP_PIN_ELE) == LOW) {
-    stopMotor[ELE] = true;
+    stopMotorEndstop[ELE] = true;
     endstopTriggered[ELE] = true;
+  }
+  else {
+    stopMotorEndstop[ELE] = false;
+    endstopTriggered[ELE] = false;
+    lastEndstopActive[ELE] = false;
   }
 }
 
@@ -63,6 +82,10 @@ int getEndstopPin(int motorID) {
 // Setup
 void setup() {
   Serial.begin(115200);
+
+  badEndstopDir[AZI] = 0; // These bad directions were obtained experimentally
+  badEndstopDir[POL] = 1;
+  badEndstopDir[ELE] = 1;
 
   pinMode(DIR_PIN_AZI, OUTPUT);
   pinMode(DIR_PIN_POL, OUTPUT);
@@ -99,8 +122,8 @@ void loop() {
 
   // Optional: check for endstop triggered messages
   for (int i = 0; i < 3; i++) {
-    if (endstopTriggered[i]) {
-      endstopTriggered[i] = false;
+    if (endstopTriggered[i] && (lastEndstopActive[i] == false)) {
+      lastEndstopActive[i] = true;
       switch(i) {
         case AZI: Serial.println("AZI motor movement stopped: ENDSTOP triggered."); break;
         case POL: Serial.println("POL motor movement stopped: ENDSTOP triggered."); break;

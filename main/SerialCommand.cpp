@@ -163,14 +163,6 @@ void parseSerialCommand(const String& input)
         int endstopPin = getEndstopPin(mID);
         bool endstopActiveNow = (digitalRead(endstopPin) == LOW);
         int dir = directionVal[mID];
-        if (endstopActiveNow && dir == 1) {
-          switch(mID) {
-            case 0: Serial.println("AZI endstop active => cannot step further forward."); break;
-            case 1: Serial.println("POL endstop active => cannot step further forward."); break;
-            case 2: Serial.println("ELE endstop active => cannot step further forward."); break;
-          }
-          break;
-        }
       }
       // Otherwise, proceed with moveMotor
       if (mID == 0) {

@@ -35,8 +35,10 @@
 extern int   desiredSteps[3];
 extern int   directionVal[3];
 extern float stepFrequency[3];
+extern int   badEndstopDir[3];  // Directions that are not allowed once the endstop is reached
 
 extern bool  stopMotor[3];
+extern volatile bool  stopMotorEndstop[3];
 extern bool  disableAfterMotion;
 extern bool  sweepMode[3];
 extern volatile bool endstopTriggered[3];
