@@ -48,10 +48,6 @@ extern bool  disableAfterMotion;
 extern bool  sweepMode[3];
 extern volatile bool endstopTriggered[3];
 
-// Helper enumerations (if you wish to share them)
-//static const int AZI = 0;
-//static const int POL = 1;
-//static const int ELE = 2;
 static enum _motors {
 	AZI,
 	POL,

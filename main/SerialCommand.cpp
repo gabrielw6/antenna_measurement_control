@@ -82,8 +82,7 @@ void moveMotorsCMD(int motorID, int steps) {
       Serial.print(" steps = ");
       Serial.println(steps);
 
-       moveMotor(motorID, steps, directionVal[motorID], stepFrequency[motorID],
-                 stepPins[motorID], dirPins[motorID],
+      moveMotor(motorID, steps, directionVal[motorID], stepFrequency[motorID],
                  MCPWMUnits[motorID], MCPWMTimers[motorID]);
 }
 

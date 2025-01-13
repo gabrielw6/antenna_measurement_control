@@ -27,11 +27,29 @@ void setupMCPWMChannel(mcpwm_unit_t unit, mcpwm_timer_t timer, int stepPin) {
     mcpwm_stop(unit, timer);
 }
 
+// void moveHome(int motorID, float freq, int stepPin, int dirPin,
+//               mcpwm_unit_t unit, mcpwm_timer_t timer) {
+//   // Clear stop flag
+//   stopMotor[motorID] = false;
+
+//   // Enable motors
+//   digitalWrite(MOTOR_ENABLE_PIN, LOW);
+
+//   // Set direction
+//   digitalWrite(dirPin, (badEndstopDir[motorID] == 1) ? HIGH : LOW);
+
+//   // Start MCPWM
+//   mcpwm_stop(unit, timer);
+//   mcpwm_set_frequency(unit, timer, (int)freq);
+//   mcpwm_set_duty(unit, timer, MCPWM_OPR_A, 50.0);
+//   mcpwm_start(unit, timer);
+// }
+
 void moveMotor(int motorID, int steps, int dir, float freq, 
-               int stepPin, int dirPin,
                mcpwm_unit_t unit, mcpwm_timer_t timer)
 {
-  
+  int dirPin = dirPins[motorID];
+  int stepPin = stepPins[motorID];
 
   // Clear stop flag
   stopMotor[motorID] = false;
