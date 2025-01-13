@@ -57,19 +57,14 @@ void moveMotor(int motorID, int steps, int dir, float freq,
 
   while ((millis() - startTime) < total_time_ms) {
     if (stopMotor[motorID]) {
-      switch(motorID) {
-        case AZI: Serial.println("AZI motor STOP mid-move."); break;
-        case POL: Serial.println("POL motor STOP mid-move."); break;
-        case ELE: Serial.println("ELE motor STOP mid-move."); break;
-      }
+      Serial.print(motorNames[motorID]);
+      Serial.println(" motor STOP mid-move.");
       break;
     }
     if((dir == badEndstopDir[motorID]) && (endstopTriggered[motorID])) {
-      switch(motorID) {
-        case AZI: Serial.println("Refuse to move AZI motor past endstop."); break;
-        case POL: Serial.println("Refuse to move POL motor past endstop."); break;
-        case ELE: Serial.println("Refuse to move ELE motor past endstop."); break;
-      }
+      Serial.print("Refuse to move ");
+      Serial.print(motorNames[motorID]);
+      Serial.println(" motor past endstop.");
       break;
     }
     checkForStopCommands();
@@ -83,11 +78,8 @@ void moveMotor(int motorID, int steps, int dir, float freq,
   stopMotor[motorID] = false;
 
   // End message
-  switch(motorID) {
-    case AZI: Serial.println("AZI motor movement complete."); break;
-    case POL: Serial.println("POL motor movement complete."); break;
-    case ELE: Serial.println("ELE motor movement complete."); break;
-  }
+  Serial.print(motorNames[motorID]);
+  Serial.println(" movement complete.");
 
   // If "disableAfterMotion" and no sweep => disable
   if (disableAfterMotion && !(sweepMode[0] || sweepMode[1] || sweepMode[2])) {

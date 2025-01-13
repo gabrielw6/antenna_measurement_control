@@ -39,45 +39,29 @@ int stepsPerRev = 200;
 // --- Endstop ISRs ---
 void IRAM_ATTR endstopAZI() {
   if (digitalRead(ENDSTOP_PIN_AZI) == LOW) {
-    stopMotorEndstop[AZI] = true;
     endstopTriggered[AZI] = true;
   }
   else {
-    stopMotorEndstop[AZI] = false;
     endstopTriggered[AZI] = false;
     lastEndstopActive[AZI] = false;
   }
 }
 void IRAM_ATTR endstopPOL() {
   if (digitalRead(ENDSTOP_PIN_POL) == LOW) {
-    stopMotorEndstop[POL] = true;
     endstopTriggered[POL] = true;
   }
   else {
-    stopMotorEndstop[POL] = false;
     endstopTriggered[POL] = false;
     lastEndstopActive[POL] = false;
   }
 }
 void IRAM_ATTR endstopELE() {
   if (digitalRead(ENDSTOP_PIN_ELE) == LOW) {
-    stopMotorEndstop[ELE] = true;
     endstopTriggered[ELE] = true;
   }
   else {
-    stopMotorEndstop[ELE] = false;
     endstopTriggered[ELE] = false;
     lastEndstopActive[ELE] = false;
-  }
-}
-
-// Example helper function if you need it 
-int getEndstopPin(int motorID) {
-  switch(motorID) {
-    case AZI: return ENDSTOP_PIN_AZI;
-    case POL: return ENDSTOP_PIN_POL;
-    case ELE: return ENDSTOP_PIN_ELE;
-    default:  return -1; 
   }
 }
 
@@ -126,11 +110,8 @@ void loop() {
   for (int i = 0; i < 3; i++) {
     if (endstopTriggered[i] && (lastEndstopActive[i] == false)) {
       lastEndstopActive[i] = true;
-      switch(i) {
-        case AZI: Serial.println("AZI motor movement stopped: ENDSTOP triggered."); break;
-        case POL: Serial.println("POL motor movement stopped: ENDSTOP triggered."); break;
-        case ELE: Serial.println("ELE motor movement stopped: ENDSTOP triggered."); break;
-      }
+      Serial.print(motorNames[i]);
+      Serial.println(" motor movement stopped: ENDSTOP triggered.");
     }
   }
 }

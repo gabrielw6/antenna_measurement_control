@@ -17,8 +17,6 @@ void checkForStopCommands()
   }
 }
 
-int getEndstopPin(int motorID);
-
 // cmdType is 0 for commands in the style
 // 	L#  -> command 'L' followed by numeric argument #
 // parsedArgs should be a pointer to an integer array of length 2.
@@ -75,28 +73,18 @@ void stopMotorsCMD(int motorID) {
 }
 
 void moveMotorsCMD(int motorID, int steps) {
-      desiredSteps[motorID-1] = steps;
+      desiredSteps[motorID] = steps;
       Serial.print("Motor ID: ");
       Serial.println(motorID);
 
       // Otherwise, proceed with moveMotor
-      Serial.print(motorNames[motorID-1]);
+      Serial.print(motorNames[motorID]);
       Serial.print(" steps = ");
       Serial.println(steps);
 
-      if ((motorID-1) == 0) {
-        moveMotor(0, steps, directionVal[0], stepFrequency[0],
-                  STEP_PIN_AZI, DIR_PIN_AZI,
-                  MCPWM_UNIT_AZI, MCPWM_TIMER_AZI);
-      } else if ((motorID-1) == 1) {
-        moveMotor(1, steps, directionVal[1], stepFrequency[1],
-                  STEP_PIN_POL, DIR_PIN_POL,
-                  MCPWM_UNIT_POL, MCPWM_TIMER_POL);
-      } else {
-        moveMotor(2, steps, directionVal[2], stepFrequency[2],
-                  STEP_PIN_ELE, DIR_PIN_ELE,
-                  MCPWM_UNIT_ELE, MCPWM_TIMER_ELE);
-      }
+       moveMotor(motorID, steps, directionVal[motorID], stepFrequency[motorID],
+                 stepPins[motorID], dirPins[motorID],
+                 MCPWMUnits[motorID], MCPWMTimers[motorID]);
 }
 
 		
@@ -155,52 +143,41 @@ void parseSerialCommand(const String& input)
     // Sx <steps> => step command
     case 'S':
       parseInput(input, 1, argv);
-      mID = argv[0];
+      mID = argv[0] - 1;
       steps = argv[1];
+      // Step the motors in the specified amount
       if (steps <= 0) {
         Serial.println("Invalid steps. Must be positive integer.");
         break;
       }
 
       moveMotorsCMD(mID, steps);
-
       return;
 
     // Dx <0 or 1> => set direction
     case 'D':
       parseInput(input, 1, argv);
-      mID = argv[0]-1;
+      mID = argv[0] - 1;
       dir = argv[1];
+      // Set direction
       if ( (dir < 0) || (dir > 1)) {
         Serial.println("Invalid dir. Must be 0 or 1.");
       }
 
       directionVal[mID] = dir;
-      switch(mID) {
-        case 0: 
-          digitalWrite(DIR_PIN_AZI, dir ? HIGH : LOW);
-          Serial.print("AZI direction => ");
-          Serial.println(dir);
-          break;
-        case 1:
-          digitalWrite(DIR_PIN_POL, dir ? HIGH : LOW);
-          Serial.print("POL direction => ");
-          Serial.println(dir);
-          break;
-        case 2:
-          digitalWrite(DIR_PIN_ELE, dir ? HIGH : LOW);
-          Serial.print("ELE direction => ");
-          Serial.println(dir);
-          break;
-      }
+      digitalWrite(dirPins[mID], dir ? HIGH : LOW);
+
+      Serial.print(motorNames[mID]);
+      Serial.print(" direction => ");
+      Serial.println(dir);
       return;
 
     // Fx <rpm> => set speed
     case 'F':
       parseInput(input, 1, argv);
-      mID = argv[0];
+      mID = argv[0]-1;
       rpm = argv[1];
-
+      // Set speed
       if (rpm < 0) {
         Serial.println("Invalid RPM. Must be positive integer.");
         return;
@@ -208,27 +185,12 @@ void parseSerialCommand(const String& input)
 
       rpmF = (float)rpm;
       stepFrequency[mID] = (rpmF * (float)stepsPerRev) / 60.0f;
-      switch(mID) {
-        case 0:
-          Serial.print("AZI speed => ");
-          Serial.print(rpmF);
-          Serial.print(" rpm => ");
-          Serial.println(stepFrequency[0]);
-          break;
-        case 1:
-          Serial.print("POL speed => ");
-          Serial.print(rpmF);
-          Serial.print(" rpm => ");
-          Serial.println(stepFrequency[1]);
-          break;
-        case 2:
-          Serial.print("ELE speed => ");
-          Serial.print(rpmF);
-          Serial.print(" rpm => ");
-          Serial.println(stepFrequency[2]);
-          break;
-      }
 
+      Serial.print(motorNames[mID]);
+      Serial.print(" speed => ");
+      Serial.print(rpmF);
+      Serial.print(" rpm => ");
+      Serial.println(stepFrequency[mID]);
       return;
 
     default:
