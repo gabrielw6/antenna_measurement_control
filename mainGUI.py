@@ -329,7 +329,7 @@ class MainWindow(QMainWindow):
             self.update_status("Invalid steps per revolution value.")
 
     def toggle_disable_after_motion(self, state):
-        enabled = (state == Qt.Checked)
+        enabled = (state == Qt.CheckState.Checked.value)
         cmd = f"Z {1 if enabled else 0}\n"
         self.send_command(cmd)
 
