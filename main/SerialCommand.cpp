@@ -17,230 +17,219 @@ void checkForStopCommands()
   }
 }
 
-int getEndstopPin(int motorID); // if you need the helper from main.ino
+int getEndstopPin(int motorID);
 
+// cmdType is 0 for commands in the style
+// 	L#  -> command 'L' followed by numeric argument #
+// parsedArgs should be a pointer to an integer array of length 2.
+void parseInput(String inputStr, int cmdType, int *parsedArgs) {
+	int newVal, spaceIndex;
+	String valStr;
+	valStr = inputStr.substring(1);
+	valStr.trim();
+	newVal = valStr.toInt();
+
+	parsedArgs[0] = 0;
+	parsedArgs[1] = 0;
+
+	if (cmdType == 0) {
+		parsedArgs[0] = newVal;
+		return;
+	}
+
+  // if cmdType == 1 ...  
+  spaceIndex = valStr.indexOf(' ');
+
+  if (spaceIndex < 0) {
+    Serial.println("Missing arguments.");
+    return;
+  }
+
+  String argumentA = valStr.substring(0, spaceIndex);
+  argumentA.trim();
+  String argumentB = valStr.substring(spaceIndex + 1);
+  argumentB.trim();
+  parsedArgs[0] = argumentA.toInt();
+  if ( (parsedArgs[0] < 1) || (parsedArgs[0] > 3)) {
+    Serial.println("Motor index incorrect. Should be between 1 and 3.");
+    parsedArgs[0] = 0;
+    return;
+  }
+  parsedArgs[1] = argumentB.toInt();
+
+  return;
+}
+
+void stopMotorsCMD(int motorID) {
+    if (motorID == 0) {
+      stopMotor[AZI] = true;
+      stopMotor[POL] = true;
+      stopMotor[ELE] = true;
+      Serial.println("Stop ALL (AZI,POL,ELE).");
+    } else if (motorID >= 1 && motorID <= 3) {
+      stopMotor[motorID - 1] = true;
+      Serial.print("Stop ");
+      Serial.print(motorNames[motorID - 1]);
+      Serial.println(" motor.");
+    }
+}
+
+void moveMotorsCMD(int motorID, int steps) {
+      desiredSteps[motorID-1] = steps;
+      Serial.print("Motor ID: ");
+      Serial.println(motorID);
+
+      // Otherwise, proceed with moveMotor
+      Serial.print(motorNames[motorID-1]);
+      Serial.print(" steps = ");
+      Serial.println(steps);
+
+      if ((motorID-1) == 0) {
+        moveMotor(0, steps, directionVal[0], stepFrequency[0],
+                  STEP_PIN_AZI, DIR_PIN_AZI,
+                  MCPWM_UNIT_AZI, MCPWM_TIMER_AZI);
+      } else if ((motorID-1) == 1) {
+        moveMotor(1, steps, directionVal[1], stepFrequency[1],
+                  STEP_PIN_POL, DIR_PIN_POL,
+                  MCPWM_UNIT_POL, MCPWM_TIMER_POL);
+      } else {
+        moveMotor(2, steps, directionVal[2], stepFrequency[2],
+                  STEP_PIN_ELE, DIR_PIN_ELE,
+                  MCPWM_UNIT_ELE, MCPWM_TIMER_ELE);
+      }
+}
+
+		
 void parseSerialCommand(const String& input)
 {
+  int argv[3];
+  int mID, dir, steps, rpm;
+  float rpmF;
   if (input.length() == 0) return;
 
   char cmd = input.charAt(0);
 
-  // G => get stepsPerRev
-  if (cmd == 'G') {
-    Serial.println(stepsPerRev);
-    return;
-  }
-
-  // R => set stepsPerRev
-  if (cmd == 'R') {
-    String valStr = input.substring(1);
-    valStr.trim();
-    int newVal = valStr.toInt();
-    if (newVal > 0) {
-      stepsPerRev = newVal;
-      Serial.print("StepsPerRev set to ");
+  switch(cmd) {
+    // 1. G => get stepsPerRev
+    case 'G':
       Serial.println(stepsPerRev);
-    } else {
-      Serial.println("Invalid stepsPerRev.");
-    }
-    return;
-  }
+      break;
 
-  // X => stop commands
-  if (cmd == 'X') {
-    if (input.length() < 2) {
-      Serial.println("Use X0..X3 (0=all, 1=AZI,2=POL,3=ELE).");
-      return;
-    }
-    int idx = input.charAt(1) - '0';
-    if (idx == 0) {
-      stopMotor[0] = true;
-      stopMotor[1] = true;
-      stopMotor[2] = true;
-      Serial.println("Stop ALL (AZI,POL,ELE).");
-    } else if (idx >= 1 && idx <= 3) {
-      stopMotor[idx - 1] = true;
-      switch(idx) {
-        case 1: Serial.println("Stop AZI motor."); break;
-        case 2: Serial.println("Stop POL motor."); break;
-        case 3: Serial.println("Stop ELE motor."); break;
+    // 2. R => set stepsPerRev
+    case 'R':
+      parseInput(input, 0, argv);
+      if (argv[0] > 0) {
+        stepsPerRev = argv[0];
+        Serial.print("StepsPerRev set to ");
+        Serial.println(stepsPerRev);
+      } else {
+        Serial.println("Invalid stepsPerRev.");
       }
-    } else {
-      Serial.println("Invalid X command. Use X0..X3.");
-    }
-    return;
-  }
-
-  // Z => disableAfterMotion
-  if (cmd == 'Z') {
-    String valStr = input.substring(1);
-    valStr.trim();
-    int val = valStr.toInt();
-    if (val == 1) {
-      disableAfterMotion = true;
-      Serial.println("disableAfterMotion = true");
-      digitalWrite(5, HIGH);
-    } else {
-      disableAfterMotion = false;
-      Serial.println("disableAfterMotion = false => motors forced ON");
-      digitalWrite(5, LOW); // Keep motors on
-    }
-    return;
-  }
-
-  // W => sweepMode
-  if (cmd == 'W') {
-    // e.g. "W 1 1" => AZI sweep ON
-    String rest = input.substring(1);
-    rest.trim();
-    int spaceIdx = rest.indexOf(' ');
-    if (spaceIdx < 0) {
-      Serial.println("Format: W <1..3> <0/1>");
       return;
-    }
-    String motorStr = rest.substring(0, spaceIdx);
-    String modeStr  = rest.substring(spaceIdx + 1);
-    motorStr.trim(); modeStr.trim();
-    int mID = motorStr.toInt();
-    int modeVal = modeStr.toInt();
-    if (mID < 1 || mID > 3) {
-      Serial.println("W cmd: motor must be 1(AZI),2=POL,3=ELE.");
+
+    // 3. X => stop commands
+    case 'X':
+      if (input.length() < 2) {
+        Serial.println("Use X0..X3 (0=all, 1=AZI,2=POL,3=ELE).");
+        return;
+      }
+      parseInput(input, 0, argv);
+      stopMotorsCMD(argv[0]);
       return;
-    }
-    sweepMode[mID - 1] = (modeVal == 1);
-    if (sweepMode[mID - 1]) {
-      switch(mID) {
-        case 1: Serial.println("AZI sweepMode = ON"); break;
-        case 2: Serial.println("POL sweepMode = ON"); break;
-        case 3: Serial.println("ELE sweepMode = ON"); break;
+
+    // 4. Z => disableAfterMotion
+    case 'Z':
+      parseInput(input, 0, argv);
+      if (argv[0] == 1) {
+        disableAfterMotion = true;
+        Serial.println("disableAfterMotion = true");
+        digitalWrite(5, HIGH);
+      } else {
+        disableAfterMotion = false;
+        Serial.println("disableAfterMotion = false => motors forced ON");
+        digitalWrite(5, LOW); // Keep motors on
       }
-    } else {
-      switch(mID) {
-        case 1: Serial.println("AZI sweepMode = OFF"); break;
-        case 2: Serial.println("POL sweepMode = OFF"); break;
-        case 3: Serial.println("ELE sweepMode = OFF"); break;
-      }
-    }
-    // If any sweep is active => keep motors on
-    if (sweepMode[0] || sweepMode[1] || sweepMode[2]) {
-      digitalWrite(5, LOW);
-      Serial.println("At least one sweep ON => motors forced ON (D5=LOW).");
-    } else {
-      Serial.println("No sweeps => normal disableAfterMotion logic applies.");
-    }
-    return;
-  }
 
-  // For S, D, F => e.g. "S1 200"
-  if (input.length() < 3) {
-    Serial.println("Command format error. e.g. 'S1 200'.");
-    return;
-  }
+      return;
 
-  // Determine which motor
-  char mChar = input.charAt(1);
-  if (mChar < '1' || mChar > '3') {
-    Serial.println("Motor must be 1(AZI),2=POL,3=ELE.");
-    return;
-  }
-  int mID = (mChar - '1');
-
-  String valStr = input.substring(3);
-  valStr.trim();
-  int val = valStr.toInt();
-
-  switch (cmd) {
     // Sx <steps> => step command
     case 'S':
-      if (val <= 0) {
+      parseInput(input, 1, argv);
+      mID = argv[0];
+      steps = argv[1];
+      if (steps <= 0) {
         Serial.println("Invalid steps. Must be positive integer.");
         break;
       }
-      desiredSteps[mID] = val;
 
-      // Check if endstop is active, direction=1 => forward => refuse
-      {
-        int endstopPin = getEndstopPin(mID);
-        bool endstopActiveNow = (digitalRead(endstopPin) == LOW);
-        int dir = directionVal[mID];
-      }
-      // Otherwise, proceed with moveMotor
-      if (mID == 0) {
-        Serial.print("AZI steps = ");
-        Serial.println(val);
-        moveMotor(0, val, directionVal[0], stepFrequency[0],
-                  STEP_PIN_AZI, DIR_PIN_AZI,
-                  MCPWM_UNIT_AZI, MCPWM_TIMER_AZI);
-      } else if (mID == 1) {
-        Serial.print("POL steps = ");
-        Serial.println(val);
-        moveMotor(1, val, directionVal[1], stepFrequency[1],
-                  STEP_PIN_POL, DIR_PIN_POL,
-                  MCPWM_UNIT_POL, MCPWM_TIMER_POL);
-      } else {
-        Serial.print("ELE steps = ");
-        Serial.println(val);
-        moveMotor(2, val, directionVal[2], stepFrequency[2],
-                  STEP_PIN_ELE, DIR_PIN_ELE,
-                  MCPWM_UNIT_ELE, MCPWM_TIMER_ELE);
-      }
-      break;
+      moveMotorsCMD(mID, steps);
+
+      return;
 
     // Dx <0 or 1> => set direction
     case 'D':
-      if (val == 0 || val == 1) {
-        directionVal[mID] = val;
-        switch(mID) {
-          case 0: 
-            digitalWrite(DIR_PIN_AZI, val ? HIGH : LOW);
-            Serial.print("AZI direction => ");
-            Serial.println(val);
-            break;
-          case 1:
-            digitalWrite(DIR_PIN_POL, val ? HIGH : LOW);
-            Serial.print("POL direction => ");
-            Serial.println(val);
-            break;
-          case 2:
-            digitalWrite(DIR_PIN_ELE, val ? HIGH : LOW);
-            Serial.print("ELE direction => ");
-            Serial.println(val);
-            break;
-        }
-      } else {
-        Serial.println("Invalid direction. Use 0 or 1.");
+      parseInput(input, 1, argv);
+      mID = argv[0]-1;
+      dir = argv[1];
+      if ( (dir < 0) || (dir > 1)) {
+        Serial.println("Invalid dir. Must be 0 or 1.");
       }
-      break;
+
+      directionVal[mID] = dir;
+      switch(mID) {
+        case 0: 
+          digitalWrite(DIR_PIN_AZI, dir ? HIGH : LOW);
+          Serial.print("AZI direction => ");
+          Serial.println(dir);
+          break;
+        case 1:
+          digitalWrite(DIR_PIN_POL, dir ? HIGH : LOW);
+          Serial.print("POL direction => ");
+          Serial.println(dir);
+          break;
+        case 2:
+          digitalWrite(DIR_PIN_ELE, dir ? HIGH : LOW);
+          Serial.print("ELE direction => ");
+          Serial.println(dir);
+          break;
+      }
+      return;
 
     // Fx <rpm> => set speed
     case 'F':
-      if (val > 0) {
-        float rpm = (float)val;
-        stepFrequency[mID] = (rpm * (float)stepsPerRev) / 60.0f;
-        switch(mID) {
-          case 0:
-            Serial.print("AZI speed => ");
-            Serial.print(rpm);
-            Serial.print(" rpm => ");
-            Serial.println(stepFrequency[0]);
-            break;
-          case 1:
-            Serial.print("POL speed => ");
-            Serial.print(rpm);
-            Serial.print(" rpm => ");
-            Serial.println(stepFrequency[1]);
-            break;
-          case 2:
-            Serial.print("ELE speed => ");
-            Serial.print(rpm);
-            Serial.print(" rpm => ");
-            Serial.println(stepFrequency[2]);
-            break;
-        }
-      } else {
+      parseInput(input, 1, argv);
+      mID = argv[0];
+      rpm = argv[1];
+
+      if (rpm < 0) {
         Serial.println("Invalid RPM. Must be positive integer.");
+        return;
       }
-      break;
+
+      rpmF = (float)rpm;
+      stepFrequency[mID] = (rpmF * (float)stepsPerRev) / 60.0f;
+      switch(mID) {
+        case 0:
+          Serial.print("AZI speed => ");
+          Serial.print(rpmF);
+          Serial.print(" rpm => ");
+          Serial.println(stepFrequency[0]);
+          break;
+        case 1:
+          Serial.print("POL speed => ");
+          Serial.print(rpmF);
+          Serial.print(" rpm => ");
+          Serial.println(stepFrequency[1]);
+          break;
+        case 2:
+          Serial.print("ELE speed => ");
+          Serial.print(rpmF);
+          Serial.print(" rpm => ");
+          Serial.println(stepFrequency[2]);
+          break;
+      }
+
+      return;
 
     default:
       Serial.println("Unknown cmd. Use Sx, Dx, Fx, Xx, G, R, Z, W...");

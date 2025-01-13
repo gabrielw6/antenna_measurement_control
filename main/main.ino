@@ -7,6 +7,8 @@ int   desiredSteps[3]   = {0, 0, 0};
 int   directionVal[3]   = {0, 0, 0};
 int   badEndstopDir[3]  = {0, 0, 0};  // Directions that are not allowed once the endstop is reached
 
+char motorNames[3][4] = {"AZI", "POL", "ELE"};
+
 float stepFrequency[3]  = {1000.0, 1000.0, 1000.0};
 
 bool  stopMotor[3]      = {false, false, false};
