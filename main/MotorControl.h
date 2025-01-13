@@ -2,6 +2,7 @@
 #define MOTORCONTROL_H
 
 #include "Globals.h" // so we see extern references, if needed
+#include "SerialCommand.h"
 #include <driver/mcpwm.h>
 #include <soc/mcpwm_periph.h>
 

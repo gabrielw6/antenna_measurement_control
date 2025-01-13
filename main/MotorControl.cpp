@@ -60,7 +60,7 @@ void moveMotor(int motorID, int steps, int dir, float freq,
       }
       break;
     }
-    // Possibly call checkForStopCommands() if you want mid-move command handling
+    checkForStopCommands();
     delay(1);
   }
 

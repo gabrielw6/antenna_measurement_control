@@ -8,7 +8,7 @@ int   directionVal[3]   = {0, 0, 0};
 float stepFrequency[3]  = {1000.0, 1000.0, 1000.0};
 
 bool  stopMotor[3]      = {false, false, false};
-bool  disableAfterMotion = false;
+bool  disableAfterMotion = true;
 bool  sweepMode[3]      = {false, false, false};
 volatile bool endstopTriggered[3] = {false, false, false};
 

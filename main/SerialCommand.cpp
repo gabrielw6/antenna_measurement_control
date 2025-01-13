@@ -79,6 +79,7 @@ void parseSerialCommand(const String& input)
     if (val == 1) {
       disableAfterMotion = true;
       Serial.println("disableAfterMotion = true");
+      digitalWrite(5, HIGH);
     } else {
       disableAfterMotion = false;
       Serial.println("disableAfterMotion = false => motors forced ON");
